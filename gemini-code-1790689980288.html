@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Excel desde cero — Grado 9°</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:wght@600;800&display=swap">
+<style>
+:root{
+  --bg:#EEF5F0; --paper:#FFFFFF; --ink:#12241A; --muted:#4C6357; --line:#C9DCCF;
+  --green:#1D6F42; --on-green:#FFFFFF; --soft:#DCEBE1; --hl:#FFD84D; --on-hl:#3A2E00;
+  --bad:#B93A2B; --bad-soft:#FBE3DF; --good-soft:#D8F0E1; --blue-soft:#DDEAF8;
+  --head:'Bricolage Grotesque','Trebuchet MS',system-ui,sans-serif;
+  --body:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0D1911; --paper:#15251B; --ink:#E7F3EB; --muted:#9BB5A5; --line:#2A4132;
+    --green:#3FB27A; --on-green:#06140C; --soft:#1E3327; --hl:#E7BE2B; --on-hl:#241B00;
+    --bad:#F08A7C; --bad-soft:#3A1E1A; --good-soft:#1B3A28; --blue-soft:#1C2E44;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0D1911; --paper:#15251B; --ink:#E7F3EB; --muted:#9BB5A5; --line:#2A4132;
+  --green:#3FB27A; --on-green:#06140C; --soft:#1E3327; --hl:#E7BE2B; --on-hl:#241B00;
+  --bad:#F08A7C; --bad-soft:#3A1E1A; --good-soft:#1B3A28; --blue-soft:#1C2E44;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{height:100%;margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:17px;line-height:1.5}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+
+.app{height:100%;display:flex;flex-direction:column}
+
+/* Barra de columnas = navegación */
+.top{display:flex;background:var(--soft);border-bottom:1px solid var(--line);flex:none}
+.corner{width:34px;flex:none;border-right:1px solid var(--line)}
+.cols{display:flex;overflow-x:auto;scrollbar-width:none;flex:1}
+.cols::-webkit-scrollbar{display:none}
+.col{flex:1 0 46px;min-height:36px;border:0;border-right:1px solid var(--line);background:transparent;color:var(--muted);font-weight:700;cursor:pointer}
+.col:hover{background:var(--line)}
+.col.on{background:var(--green);color:var(--on-green)}
+.fbar{display:flex;align-items:center;gap:10px;padding:6px 10px;background:var(--paper);border-bottom:1px solid var(--line);flex:none}
+.namebox{min-width:52px;text-align:center;padding:2px 8px;border:1px solid var(--line);border-radius:4px;font-weight:700;background:var(--bg)}
+.fx{font-family:var(--head);font-style:italic;color:var(--green);font-weight:800}
+.ftitle{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.stage{flex:1;overflow-y:auto;overflow-x:hidden}
+.slide{display:none;max-width:1000px;margin:0 auto;padding:28px 20px 40px}
+.slide.on{display:block}
+.slide h2{font-family:var(--head);font-weight:800;font-size:clamp(1.7rem,4.5vw,2.6rem);line-height:1.1;margin:0 0 12px;letter-spacing:-.01em}
+.lead{font-size:1.12rem;max-width:62ch;margin:0 0 20px;color:var(--muted)}
+.lead b{color:var(--ink)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start}
+@media(max-width:780px){.two{grid-template-columns:1fr}}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:16px}
+.tag{display:inline-block;background:var(--hl);color:var(--on-hl);font-weight:700;padding:2px 12px;border-radius:999px;font-size:.92rem;margin-bottom:10px}
+.chip{display:inline-block;background:var(--soft);border-radius:999px;padding:4px 12px;font-size:.95rem;margin:0 6px 6px 0}
+
+.btn{min-height:44px;padding:8px 16px;border-radius:8px;border:1.5px solid var(--green);background:transparent;color:var(--green);cursor:pointer;font-weight:700}
+.btn:hover{background:var(--soft)}
+.btn.primary,.btn[aria-pressed="true"]{background:var(--green);color:var(--on-green)}
+.btn:disabled{opacity:.4;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.fb{min-height:48px;padding:10px 14px;border-radius:8px;background:var(--soft)}
+.fb.ok{background:var(--good-soft)} .fb.no{background:var(--bad-soft)} .fb.info{background:var(--blue-soft)}
+
+/* Hoja de cálculo genérica */
+.sheet{display:grid;border-top:1px solid var(--line);border-left:1px solid var(--line);background:var(--paper);width:100%}
+.sheet>*{border-right:1px solid var(--line);border-bottom:1px solid var(--line);min-height:36px;display:flex;align-items:center;padding:0 8px;min-width:0}
+.sheet .h{background:var(--soft);color:var(--muted);font-weight:700;justify-content:center;padding:0}
+.cell{background:var(--paper);border-top:0;border-left:0;cursor:pointer;padding:0}
+.cell:hover{background:var(--soft)}
+.cell.sel{outline:3px solid var(--green);outline-offset:-3px;background:var(--paper)}
+.cell.rng{background:var(--hl)}
+.cell.ok{background:var(--good-soft)} .cell.bad{background:var(--bad-soft)}
+.num{justify-content:flex-end;font-variant-numeric:tabular-nums}
+.inrange{background:var(--hl);color:var(--on-hl)}
+.sheet input{width:100%;border:0;background:transparent;text-align:right;padding:6px 0;font-variant-numeric:tabular-nums}
+.big{font-size:1.5rem;font-family:var(--head);font-weight:800}
+
+/* Diapositiva 3: pantalla simulada */
+.mock{border:2px solid var(--green);border-radius:10px;overflow:hidden;background:var(--paper)}
+.part{display:flex;border:0;background:transparent;cursor:pointer;padding:0}
+.part.active{outline:4px solid var(--hl);outline-offset:-4px;background:var(--hl);color:var(--on-hl)}
+.part:hover{background:var(--soft)}
+.part.active:hover{background:var(--hl)}
+.mock .ribbon{width:100%;gap:16px;padding:8px 12px;background:var(--green);color:var(--on-green);font-weight:700;font-size:.9rem;flex-wrap:wrap}
+.mock .ribbon:hover{background:var(--green)}
+.mock .ribbon.active{color:var(--on-hl);background:var(--hl)}
+.mrow{display:flex;border-bottom:1px solid var(--line)}
+.namebx{width:70px;justify-content:center;align-items:center;padding:6px;border-right:1px solid var(--line);font-weight:700}
+.fxbx{flex:1;align-items:center;gap:10px;padding:6px 10px;font-variant-numeric:tabular-nums}
+.fxbx i{color:var(--green);font-weight:800}
+.fxbx.active i{color:var(--on-hl)}
+.mbody{display:grid;grid-template-columns:34px 1fr}
+.mcols{display:flex;background:var(--soft);border-bottom:1px solid var(--line)}
+.mcols span,.mrows span{flex:1;text-align:center;padding:4px 0;font-weight:700;color:var(--muted);border-right:1px solid var(--line)}
+.mcols.active span,.mrows.active span{color:var(--on-hl)}
+.mrows{flex-direction:column;background:var(--soft);border-right:1px solid var(--line)}
+.mrows span{height:34px;border-right:0;border-bottom:1px solid var(--line);padding:0;display:flex;align-items:center;justify-content:center}
+.mcells{display:grid;grid-template-columns:repeat(4,1fr)}
+.mcells>*{height:34px;border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0 8px;display:flex;align-items:center;font-variant-numeric:tabular-nums}
+.mcells .celda{outline:3px solid var(--green);outline-offset:-3px;justify-content:flex-end;font-weight:700}
+.mcells .celda.active{outline-color:var(--on-hl)}
+.mtabs{width:100%;gap:0;background:var(--soft);border-top:1px solid var(--line)}
+.mtabs span{padding:6px 16px;border-right:1px solid var(--line);font-size:.9rem}
+.mtabs span:first-child{background:var(--paper);font-weight:700;color:var(--green)}
+.mtabs.active span,.mtabs.active span:first-child{background:transparent;color:var(--on-hl)}
+
+/* Formato */
+.fmt{border-collapse:collapse;width:100%}
+.fmt th,.fmt td{padding:8px 10px;text-align:left}
+.fmt .mny{display:none}
+.fmt.f-money .mny{display:inline}.fmt.f-money .raw{display:none}
+.fmt.f-bold th{font-weight:800}.fmt:not(.f-bold) th{font-weight:400}
+.fmt.f-fill th{background:var(--green);color:var(--on-green)}
+.fmt.f-borders th,.fmt.f-borders td{border:1px solid var(--ink)}
+.fmt.f-center th,.fmt.f-center td{text-align:center}
+
+/* Quiz y lista */
+.opts{display:grid;gap:8px;margin:14px 0}
+.opt{text-align:left;min-height:48px;padding:10px 14px;border-radius:8px;border:1.5px solid var(--line);background:var(--paper);cursor:pointer}
+.opt:hover:not(:disabled){border-color:var(--green)}
+.opt.right{background:var(--good-soft);border-color:var(--green)}
+.opt.wrong{background:var(--bad-soft);border-color:var(--bad)}
+.check{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1.5px solid var(--line);border-radius:8px;background:var(--paper);margin-bottom:8px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--green)}
+
+.ctrl{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;background:var(--paper);border-top:1px solid var(--line);flex:none}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="corner"></div>
+    <nav class="cols" id="cols" aria-label="Diapositivas"></nav>
+  </header>
+  <div class="fbar">
+    <span class="namebox" id="namebox">A1</span>
+    <span class="fx" aria-hidden="true">fx</span>
+    <div class="ftitle" id="ftitle"></div>
+  </div>
+
+  <main class="stage" id="stage">
+
+    <!-- 1 -->
+    <section class="slide" data-title="Excel desde cero">
+      <span class="chip">Grado 9° · Tecnología e Informática</span>
+      <h2>Excel desde cero</h2>
+      <p class="lead">Hoy vas a aprender a <b>organizar datos</b> y a dejar que el computador haga las cuentas por ti. Esta lista de compras se suma sola:</p>
+      <div class="two">
+        <div>
+          <div class="sheet" style="grid-template-columns:34px 1fr 110px">
+            <div class="h"></div><div class="h">A</div><div class="h">B</div>
+            <div class="h">1</div><div><b>Material</b></div><div class="num"><b>Valor</b></div>
+            <div class="h">2</div><div>Marcadores</div><div class="num">$ 6.000</div>
+            <div class="h">3</div><div>Cartulinas</div><div class="num">$ 4.500</div>
+            <div class="h">4</div><div>Cinta</div><div class="num">$ 3.200</div>
+            <div class="h">5</div><div><b>Total</b></div><div class="num inrange"><b>$ 13.700</b></div>
+          </div>
+          <p class="fb info" style="margin-top:12px"><b>fx</b> &nbsp;=SUMA(B2:B4)</p>
+        </div>
+        <div>
+          <p><b>En esta clase vamos a:</b></p>
+          <span class="chip">Conocer la pantalla</span><span class="chip">Celdas, filas y columnas</span><span class="chip">Tipos de datos</span><span class="chip">Funciones</span><span class="chip">Formato</span>
+          <p>Verás la etiqueta <span class="tag" style="margin:0">Actividad</span> cuando sea tu turno de practicar.</p>
+          <button class="btn primary" data-go="1">Empezar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2 -->
+    <section class="slide" data-title="¿Qué es Excel?">
+      <h2>¿Qué es Excel?</h2>
+      <p class="lead">Excel es una <b>hoja de cálculo</b>: un programa que organiza datos en tablas y hace cálculos automáticamente. Toca un ejemplo para ver cómo se usa.</p>
+      <div class="row" id="uses"></div>
+      <div class="card" id="usebox"></div>
+    </section>
+
+    <!-- 3 -->
+    <section class="slide" data-title="Partes de la pantalla">
+      <h2>Conoce la pantalla</h2>
+      <p class="lead">Toca cada parte de la ventana para saber cómo se llama y para qué sirve.</p>
+      <div class="two">
+        <div class="mock" id="mock">
+          <button class="part ribbon" data-part="cinta"><span>Archivo</span><span>Inicio</span><span>Insertar</span><span>Fórmulas</span><span>Vista</span></button>
+          <div class="mrow">
+            <button class="part namebx" data-part="cuadro">B3</button>
+            <button class="part fxbx" data-part="barra"><i>fx</i> =SUMA(B1:B2)</button>
+          </div>
+          <div class="mbody">
+            <div style="background:var(--soft);border-bottom:1px solid var(--line);border-right:1px solid var(--line)"></div>
+            <button class="part mcols" data-part="columnas"><span>A</span><span>B</span><span>C</span><span>D</span></button>
+            <button class="part mrows" data-part="filas"><span>1</span><span>2</span><span>3</span><span>4</span></button>
+            <div class="mcells">
+              <div>Ana</div><div style="justify-content:flex-end">10</div><div></div><div></div>
+              <div>Luis</div><div style="justify-content:flex-end">20</div><div></div><div></div>
+              <div>Total</div><button class="part celda" data-part="celda">30</button><div></div><div></div>
+              <div></div><div></div><div></div><div></div>
+            </div>
+          </div>
+          <button class="part mtabs" data-part="hojas"><span>Hoja1</span><span>Hoja2</span><span>+</span></button>
+        </div>
+        <div>
+          <div class="row" style="margin-top:0">
+            <button class="btn" data-mode="explore" aria-pressed="true">Explorar</button>
+            <button class="btn" data-mode="quiz" aria-pressed="false">Ponme a prueba</button>
+          </div>
+          <div class="fb info" id="partinfo" aria-live="polite"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4 -->
+    <section class="slide" data-title="Filas, columnas y celdas" id="s4">
+      <h2>Filas, columnas y celdas</h2>
+      <p class="lead">Las <b>columnas</b> tienen letras, las <b>filas</b> tienen números y una <b>celda</b> es el cruce de las dos. Su nombre es la letra y luego el número, como <b>C4</b>.</p>
+      <div class="row">
+        <button class="btn" data-m="cell" aria-pressed="true">Una celda</button>
+        <button class="btn" data-m="range" aria-pressed="false">Un rango</button>
+      </div>
+      <div class="sheet" id="g1"></div>
+      <p class="fb info" id="g1info" style="margin-top:12px" aria-live="polite">Toca cualquier celda.</p>
+    </section>
+
+    <!-- 5 -->
+    <section class="slide" data-title="Actividad: encuentra la celda">
+      <span class="tag">Actividad</span>
+      <h2>Encuentra la celda</h2>
+      <p class="lead" id="g2ask" aria-live="polite"></p>
+      <div class="sheet" id="g2"></div>
+      <p class="fb" id="g2fb" style="margin-top:12px" aria-live="polite"></p>
+      <div class="row"><span id="g2score"></span><button class="btn" id="g2restart" hidden>Jugar de nuevo</button></div>
+    </section>
+
+    <!-- 6 -->
+    <section class="slide" data-title="Tipos de datos">
+      <h2>Tipos de datos</h2>
+      <p class="lead">En una celda puedes escribir <b>texto</b>, <b>números</b>, <b>fechas</b> o <b>fórmulas</b>. Excel los reconoce solo. Escribe algo y mira cómo lo trata.</p>
+      <div class="two">
+        <div class="card">
+          <label for="t-in"><b>Escribe en la celda A1</b></label>
+          <input id="t-in" type="text" autocomplete="off" style="width:100%;margin:8px 0;padding:10px;border:1.5px solid var(--green);border-radius:8px;background:var(--paper)">
+          <div class="row">
+            <button class="btn" data-ex="Sofía">Sofía</button>
+            <button class="btn" data-ex="14">14</button>
+            <button class="btn" data-ex="12/05/2026">12/05/2026</button>
+            <button class="btn" data-ex="=2+3">=2+3</button>
+          </div>
+        </div>
+        <div>
+          <div class="sheet" style="grid-template-columns:34px 1fr">
+            <div class="h"></div><div class="h">A</div>
+            <div class="h">1</div><div id="t-cell" class="big" style="min-height:56px"></div>
+          </div>
+          <p class="fb info" style="margin-top:12px" aria-live="polite"><b id="t-type"></b><br><span id="t-note"></span></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7 (Antigua 8) -->
+    <section class="slide" data-title="Funciones">
+      <h2>Funciones: fórmulas ya hechas</h2>
+      <p class="lead">Una <b>función</b> es una fórmula lista para usar. Trabaja sobre un <b>rango</b>, por ejemplo <b>B2:B6</b>. Cambia una nota y elige una función.</p>
+      <div class="two">
+        <div>
+          <div class="sheet" style="grid-template-columns:34px 1fr 100px" id="fn-sheet"></div>
+        </div>
+        <div>
+          <div class="row" style="margin-top:0" id="fn-btns">
+            <button class="btn" data-fn="SUMA" aria-pressed="true">SUMA</button>
+            <button class="btn" data-fn="PROMEDIO" aria-pressed="false">PROMEDIO</button>
+            <button class="btn" data-fn="MAX" aria-pressed="false">MAX</button>
+            <button class="btn" data-fn="MIN" aria-pressed="false">MIN</button>
+            <button class="btn" data-fn="CONTAR" aria-pressed="false">CONTAR</button>
+          </div>
+          <div class="card">
+            <p style="margin:0 0 6px"><b>fx</b> &nbsp;<span id="fn-f"></span></p>
+            <p class="big" style="margin:0" id="fn-r"></p>
+            <p style="margin:8px 0 0;color:var(--muted)" id="fn-d"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8 (Antigua 10) -->
+    <section class="slide" data-title="Dar formato">
+      <h2>Dar formato a la tabla</h2>
+      <p class="lead">El formato no cambia los datos: hace que la tabla se lea mejor. Activa cada opción y compara.</p>
+      <div class="row" id="fmt-btns">
+        <button class="btn" data-f="f-bold" aria-pressed="false">Negrita</button>
+        <button class="btn" data-f="f-fill" aria-pressed="false">Color de relleno</button>
+        <button class="btn" data-f="f-borders" aria-pressed="false">Bordes</button>
+        <button class="btn" data-f="f-center" aria-pressed="false">Centrar</button>
+        <button class="btn" data-f="f-money" aria-pressed="false">Moneda</button>
+      </div>
+      <div class="card">
+        <table class="fmt" id="fmt">
+          <tr><th>Producto</th><th>Cantidad</th><th>Precio</th></tr>
+          <tr><td>Cuaderno</td><td>3</td><td><span class="raw">2500</span><span class="mny">$ 2.500</span></td></tr>
+          <tr><td>Lápiz</td><td>10</td><td><span class="raw">800</span><span class="mny">$ 800</span></td></tr>
+          <tr><td>Regla</td><td>2</td><td><span class="raw">1500</span><span class="mny">$ 1.500</span></td></tr>
+          <tr><td>Borrador</td><td>5</td><td><span class="raw">600</span><span class="mny">$ 600</span></td></tr>
+        </table>
+      </div>
+      <p class="lead" style="margin-top:14px">En Excel: selecciona las celdas y usa los botones de la pestaña <b>Inicio</b>.</p>
+    </section>
+
+    <!-- 9 (Antigua 12) -->
+    <section class="slide" data-title="Actividad: pon a prueba lo aprendido">
+      <span class="tag">Actividad</span>
+      <h2>Quiz final</h2>
+      <div class="card" id="quiz"></div>
+    </section>
+
+    <!-- 10 (Antigua 13) -->
+    <section class="slide" data-title="Lo que ya sabes hacer">
+      <h2>Lo que ya sabes hacer</h2>
+      <p class="lead">Marca lo que ya te sientes capaz de hacer. Lo que quede sin marcar, lo repasamos juntos.</p>
+      <div id="checks"></div>
+      <p class="fb info" id="check-msg" aria-live="polite"></p>
+      <p class="lead" style="margin-top:16px"><b>Reto para la casa:</b> crea una hoja con tus gastos de la semana y calcula el total y el promedio.</p>
+    </section>
+
+  </main>
+
+  <footer class="ctrl">
+    <button class="btn" id="prev">Anterior</button>
+    <span id="count"></span>
+    <button class="btn primary" id="next">Siguiente</button>
+  </footer>
+</div>
+
+<script>
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const L='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+const rand=n=>Math.floor(Math.random()*n);
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rand(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+const fmt=n=>Number(n).toLocaleString('es-CO',{maximumFractionDigits:2});
+const setFb=(el,cls,txt)=>{el.className='fb '+cls;el.textContent=txt};
+const el=(tag,cls,txt)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e};
+const pressed=(btns,active)=>btns.forEach(b=>b.setAttribute('aria-pressed',b===active?'true':'false'));
+
+/* ---------- Navegación ---------- */
+const slides=$$('.slide');let cur=0;
+const nav=$('#cols');
+slides.forEach((s,i)=>{
+  const b=el('button','col',L[i]);b.type='button';
+  b.title=s.dataset.title;b.setAttribute('aria-label','Diapositiva '+(i+1)+': '+s.dataset.title);
+  b.addEventListener('click',()=>go(i));nav.appendChild(b);
+});
+function go(i){
+  cur=Math.max(0,Math.min(slides.length-1,i));
+  slides.forEach((s,k)=>s.classList.toggle('on',k===cur));
+  const cols=$$('.col',nav);
+  cols.forEach((b,k)=>{b.classList.toggle('on',k===cur);b.setAttribute('aria-current',k===cur?'true':'false')});
+  $('#namebox').textContent=L[cur]+'1';
+  $('#ftitle').textContent=slides[cur].dataset.title;
+  $('#count').textContent=(cur+1)+' / '+slides.length;
+  $('#prev').disabled=cur===0;$('#next').disabled=cur===slides.length-1;
+  $('#stage').scrollTop=0;
+  const on=cols[cur];nav.scrollTo({left:on.offsetLeft-nav.clientWidth/2+on.offsetWidth/2,behavior:'smooth'});
+}
+$('#prev').onclick=()=>go(cur-1);
+$('#next').onclick=()=>go(cur+1);
+$$('[data-go]').forEach(b=>b.addEventListener('click',()=>go(+b.dataset.go)));
+document.addEventListener('keydown',e=>{
+  if(/INPUT|TEXTAREA/.test(document.activeElement.tagName))return;
+  if(e.key==='ArrowRight')go(cur+1);
+  if(e.key==='ArrowLeft')go(cur-1);
+});
+
+/* ---------- Evaluador de fórmulas sencillo ---------- */
+function evalFormula(f,getVal){
+  let s=f.trim();
+  if(s[0]!=='=')throw new Error('Debe empezar con =');
+  s=s.slice(1).toUpperCase().replace(/;/g,',');
+  if(!s.trim())throw new Error('Fórmula vacía');
+  if(!/^[A-Z0-9:+\-*/().,\s]+$/.test(s))throw new Error('Hay un símbolo no válido');
+  const num=x=>{let n=0;for(const ch of x)n=n*26+(ch.charCodeAt(0)-64);return n-1};
+  s=s.replace(/([A-Z]{1,2})(\d{1,3}):([A-Z]{1,2})(\d{1,3})/g,(m,c1,r1,c2,r2)=>`__R(${num(c1)},${+r1-1},${num(c2)},${+r2-1})`);
+  s=s.replace(/\b(SUMA|PROMEDIO|MAX|MIN|CONTAR)\(/g,'__F_$1(');
+  s=s.replace(/\b([A-Z]{1,2})(\d{1,3})\b/g,(m,c,r)=>`__C(${num(c)},${+r-1})`);
+  if(/[A-Za-z]/.test(s.replace(/__R|__C|__F_(SUMA|PROMEDIO|MAX|MIN|CONTAR)/g,'')))throw new Error('Nombre de función no reconocido');
+  const flat=a=>a.flat(Infinity).filter(v=>typeof v==='number');
+  const R=(c1,r1,c2,r2)=>{const out=[];for(let r=Math.min(r1,r2);r<=Math.max(r1,r2);r++)for(let c=Math.min(c1,c2);c<=Math.max(c1,c2);c++)out.push(getVal(c,r));return out};
+  const C=(c,r)=>{const v=getVal(c,r);if(v===undefined||v===null||v==='')return 0;if(typeof v!=='number')throw new Error('#¡VALOR!');return v};
+  const F={
+    SUMA:(...a)=>flat(a).reduce((x,y)=>x+y,0),
+    PROMEDIO:(...a)=>{const n=flat(a);if(!n.length)throw new Error('#¡DIV/0!');return n.reduce((x,y)=>x+y,0)/n.length},
+    MAX:(...a)=>Math.max(...flat(a)),
+    MIN:(...a)=>Math.min(...flat(a)),
+    CONTAR:(...a)=>flat(a).length
+  };
+  let res;
+  try{res=new Function('__R','__C','__F_SUMA','__F_PROMEDIO','__F_MAX','__F_MIN','__F_CONTAR','return ('+s+')')(R,C,F.SUMA,F.PROMEDIO,F.MAX,F.MIN,F.CONTAR)}
+  catch(e){throw new Error(e.message&&e.message[0]==='#'?e.message:'La fórmula está incompleta')}
+  if(typeof res!=='number'||!isFinite(res))throw new Error('#¡DIV/0!');
+  return res;
+}
+
+/* ---------- Constructor de cuadrículas ---------- */
+function buildGrid(host,nc,nr,handler){
+  host.style.gridTemplateColumns='34px repeat('+nc+',minmax(0,1fr))';
+  host.textContent='';
+  host.appendChild(el('div','h'));
+  for(let c=0;c<nc;c++)host.appendChild(el('div','h',L[c]));
+  const cells=[];
+  for(let r=0;r<nr;r++){
+    host.appendChild(el('div','h',String(r+1)));
+    for(let c=0;c<nc;c++){
+      const b=el('button','cell');b.type='button';
+      b.setAttribute('aria-label','Celda '+L[c]+(r+1));
+      b.addEventListener('click',()=>handler(c,r,b));
+      host.appendChild(b);cells.push(b);
+    }
+  }
+  return cells;
+}
+
+/* ---------- 2. Usos ---------- */
+(function(){
+  const uses=[
+    {n:'Notas',t:'Calcula tu promedio sin hacer las cuentas a mano.',h:['Materia','Nota'],r:[['Matemáticas','4,2'],['Español','3,8'],['Inglés','4,5']]},
+    {n:'Presupuesto',t:'Suma lo que necesitas para la fiesta y mira cuánto falta.',h:['Compra','Valor'],r:[['Gaseosas','$ 8.000'],['Pasabocas','$ 12.000'],['Música','$ 15.000']]},
+    {n:'Inventario',t:'Controla cuántos productos quedan en la tienda escolar.',h:['Producto','Cantidad'],r:[['Cuadernos','30'],['Lápices','120'],['Borradores','45']]},
+    {n:'Torneo',t:'Lleva los puntos de cada equipo y compáralos fácilmente.',h:['Curso','Puntos'],r:[['9A','12'],['9B','10'],['9C','7']]}
+  ];
+  const wrap=$('#uses'),box=$('#usebox');   const btns=uses.map((u,i)=>{const b=el('button','btn',u.n);b.type='button';b.onclick=()=>show(i);wrap.appendChild(b);return b});   function show(i){     const u=uses[i];pressed(btns,btns[i]);box.textContent='';     box.appendChild(el('p','',u.t));     const g=el('div','sheet');g.style.gridTemplateColumns='1fr 1fr';     u.h.forEach(x=>{const d=el('div','h',x);g.appendChild(d)});     u.r.forEach(row=>row.forEach((x,k)=>g.appendChild(el('div',k?'num':'',x))));     box.appendChild(g);   }   show(0); })();  /* ---------- 3. Partes de la pantalla ---------- */ (function(){   const info={     cinta:['Cinta de opciones','Aquí están las herramientas, agrupadas en pestañas: Inicio (formato), Insertar (gráficos), Fórmulas…'],     cuadro:['Cuadro de nombres','Te dice la dirección de la celda seleccionada. Aquí es B3.'],     barra:['Barra de fórmulas','Muestra lo que escribiste en la celda. En la celda ves el resultado y aquí ves la fórmula.'],     columnas:['Columnas','Van de arriba hacia abajo y se nombran con letras: A, B, C…'],     filas:['Filas','Van de lado a lado y se numeran: 1, 2, 3…'],     celda:['Celda','Es el cuadrito donde se cruzan una columna y una fila. Ahí guardas un dato.'],     hojas:['Hojas','Un libro de Excel puede tener varias hojas. Cambias de una a otra con estas pestañas.']   };   const names={cinta:'la Cinta de opciones',cuadro:'el Cuadro de nombres',barra:'la Barra de fórmulas',columnas:'las Columnas',filas:'las Filas',celda:'la Celda seleccionada',hojas:'las Hojas'};   const parts=$$('.part',$('#mock')),box=$('#partinfo');   const modeBtns=$$('[data-mode]',slides[2]);
+  let mode='explore',order=[],i=0,score=0;
+  const mark=k=>parts.forEach(p=>p.classList.toggle('active',p.dataset.part===k));
+  function explore(){mark(null);setFb(box,'info','Toca una parte de la ventana.')}
+  function ask(){
+    if(i>=order.length){setFb(box,'ok','Terminaste: '+score+' de '+order.length+' a la primera. Toca "Ponme a prueba" para repetir.');return}
+    setFb(box,'info','Haz clic en: '+names[order[i]]);
+  }
+  function startQuiz(){order=shuffle(Object.keys(info));i=0;score=0;mark(null);ask()}
+  let tries=0;
+  parts.forEach(p=>p.addEventListener('click',()=>{
+    const k=p.dataset.part;
+    if(mode==='explore'){mark(k);box.className='fb info';box.innerHTML='';box.append(el('b','',info[k][0]),document.createElement('br'),info[k][1]);return}
+    if(i>=order.length)return;
+    if(k===order[i]){if(tries===0)score++;tries=0;mark(k);i++;
+      if(i>=order.length)ask();else{setFb(box,'ok','¡Correcto! Siguiente: haz clic en '+names[order[i]]);}
+    }else{tries++;setFb(box,'no','Esa es '+names[k]+'. Inténtalo otra vez: '+names[order[i]]+'.')}
+  }));
+  modeBtns.forEach(b=>b.onclick=()=>{mode=b.dataset.mode;pressed(modeBtns,b);tries=0;mode==='explore'?explore():startQuiz()});
+  explore();
+})();
+
+/* ---------- 4. Explorar celdas y rangos ---------- */
+(function(){
+  const host=$('#g1'),info=$('#g1info');let mode='cell',anchor=null;   const cells=buildGrid(host,8,8,click);   const at=(c,r)=>cells[r*8+c];   const clear=()=>cells.forEach(x=>x.classList.remove('sel','rng'));   function click(c,r,b){     if(mode==='cell'){clear();b.classList.add('sel');setFb(info,'info','Columna '+L[c]+' + fila '+(r+1)+' = celda '+L[c]+(r+1));return}     if(!anchor){clear();anchor={c,r};b.classList.add('sel');setFb(info,'info','Ahora toca la esquina opuesta del rango.');return}     const c1=Math.min(anchor.c,c),c2=Math.max(anchor.c,c),r1=Math.min(anchor.r,r),r2=Math.max(anchor.r,r);     clear();for(let y=r1;y<=r2;y++)for(let x=c1;x<=c2;x++)at(x,y).classList.add('rng');     const n=(c2-c1+1)*(r2-r1+1);     setFb(info,'info','Rango '+L[c1]+(r1+1)+':'+L[c2]+(r2+1)+'. Son '+n+' celda'+(n>1?'s':'')+'. Los dos puntos ( : ) significan "hasta".');     anchor=null;   }   const mb=$$('[data-m]',$('#s4'));
+  mb.forEach(b=>b.onclick=()=>{mode=b.dataset.m;anchor=null;clear();pressed(mb,b);
+    setFb(info,'info',mode==='cell'?'Toca cualquier celda.':'Toca una celda y luego otra para marcar un rango.')});
+})();
+
+/* ---------- 5. Juego: encuentra la celda ---------- */
+(function(){
+  const host=$('#g2'),fb=$('#g2fb'),ask=$('#g2ask'),sc=$('#g2score'),rb=$('#g2restart');
+  const TOTAL=8;let round,score,target;
+  const cells=buildGrid(host,8,8,click);
+  function next(){target={c:rand(8),r:rand(8)};ask.textContent='Ronda '+(round+1)+' de '+TOTAL+': haz clic en la celda '+L[target.c]+(target.r+1)}
+  function start(){round=0;score=0;rb.hidden=true;setFb(fb,'','');sc.textContent='Aciertos: 0';next()}
+  function flash(b,cls){b.classList.add(cls);setTimeout(()=>b.classList.remove(cls),700)}
+  function click(c,r,b){
+    if(round>=TOTAL)return;
+    if(c===target.c&&r===target.r){score++;flash(b,'ok');setFb(fb,'ok','¡Correcto! '+L[c]+(r+1)+' es columna '+L[c]+' y fila '+(r+1)+'.')}
+    else{flash(b,'bad');flash(cells[target.r*8+target.c],'ok');setFb(fb,'no','Tocaste '+L[c]+(r+1)+'. La celda correcta era '+L[target.c]+(target.r+1)+'.')}
+    round++;sc.textContent='Aciertos: '+score;
+    if(round>=TOTAL){ask.textContent='Terminaste: acertaste '+score+' de '+TOTAL+'.';rb.hidden=false}else next();
+  }
+  rb.onclick=start;start();
+})();
+
+/* ---------- 6. Tipos de datos ---------- */
+(function(){
+  const inp=$('#t-in'),cell=$('#t-cell'),tp=$('#t-type'),nt=$('#t-note');
+  function upd(){
+    const v=inp.value.trim();let type='Vacía',al='left',shown='',msg='Escribe algo en la celda.';
+    if(v){
+      shown=inp.value;
+      if(v[0]==='='){al='right';type='Fórmula';
+        try{shown=fmt(evalFormula(v,()=>0));msg='Empieza con =, así que Excel la calcula y muestra el resultado.'}
+        catch(e){shown=e.message;msg='Excel no pudo calcularla. Revisa lo que escribiste.'}}
+      else if(/^-?\d+([.,]\d+)?$/.test(v)){al='right';type='Número';msg='Los números se alinean a la derecha y sirven para calcular.'}
+      else if(/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/.test(v)){al='right';type='Fecha';msg='Las fechas también se alinean a la derecha.'}       else{type='Texto';msg='Lo que no es número, fecha ni fórmula es texto. Se alinea a la izquierda.'}     }     cell.textContent=shown;cell.style.justifyContent=al==='right'?'flex-end':'flex-start';     tp.textContent='Tipo de dato: '+type;nt.textContent=msg;   }   inp.addEventListener('input',upd);   $$('[data-ex]',slides[5]).forEach(b=>b.onclick=()=>{inp.value=b.dataset.ex;upd()});
+  inp.value='Sofía';upd();
+})();
+
+/* ---------- 7. Funciones ---------- */
+(function(){
+  const sheet=$('#fn-sheet'),F=$('#fn-f'),R=$('#fn-r'),D=$('#fn-d');   const subj=['Matemáticas','Español','Inglés','Sociales','Tecnología'];   const vals=[4.2,3.8,4.5,3.5,4.8];let fn='SUMA';   sheet.append(el('div','h'),el('div','h','A'),el('div','h','B'));   sheet.append(el('div','h','1'),el('div','','Materia'),el('div','num','Nota'));   const ins=[];   subj.forEach((s,i)=>{     sheet.append(el('div','h',String(i+2)));     sheet.append(el('div','',s));     const d=el('div','inrange');const inp=el('input');inp.type='number';inp.step='0.1';inp.min='0';inp.max='5';inp.value=vals[i];     inp.setAttribute('aria-label','Nota de '+s);inp.oninput=upd;d.appendChild(inp);sheet.appendChild(d);ins.push(inp);   });   const desc={SUMA:'Suma todos los números del rango.',PROMEDIO:'Suma los valores y los divide entre cuántos hay.',MAX:'Encuentra el valor más grande.',MIN:'Encuentra el valor más pequeño.',CONTAR:'Cuenta cuántas celdas del rango tienen números.'};   function upd(){     const n=ins.map(i=>parseFloat(i.value)).filter(v=>!isNaN(v));     let r=0;     if(fn==='SUMA')r=n.reduce((x,y)=>x+y,0);     if(fn==='PROMEDIO')r=n.length?n.reduce((x,y)=>x+y,0)/n.length:0;     if(fn==='MAX')r=n.length?Math.max(...n):0;     if(fn==='MIN')r=n.length?Math.min(...n):0;     if(fn==='CONTAR')r=n.length;     F.textContent='='+fn+'(B2:B6)';R.textContent=fmt(r);D.textContent=desc[fn];   }   const fb=$$('[data-fn]',$('#fn-btns'));
+  fb.forEach(b=>b.onclick=()=>{fn=b.dataset.fn;pressed(fb,b);upd()});
+  upd();
+})();
+
+/* ---------- 8. Formato ---------- */
+(function(){
+  const t=$('#fmt'),bs=$$('[data-f]',$('#fmt-btns'));
+  bs.forEach(b=>b.onclick=()=>{const on=t.classList.toggle(b.dataset.f);b.setAttribute('aria-pressed',on?'true':'false')});
+})();
+
+/* ---------- 9. Quiz ---------- */
+(function(){
+  const Q=[
+    {q:'¿Cómo se llama la celda que está en la columna B y la fila 3?',o:['3B','B3','B-3','C2'],a:1,e:'Primero va la letra de la columna y luego el número de la fila.'},
+    {q:'¿Con qué signo debe empezar una fórmula?',o:['#','@','=','$'],a:2,e:'El signo = le dice a Excel que debe calcular.'},
+    {q:'¿Cuál fórmula suma los valores de B2 hasta B6?',o:['=SUMA(B2:B6)','=SUMA(B2-B6)','SUMAR B2 B6','=B2:B6+SUMA'],a:0,e:'Los dos puntos ( : ) forman el rango "de B2 hasta B6".'},
+    {q:'Cambias un número que usa una fórmula. ¿Qué pasa con el resultado?',o:['Se queda igual','Se borra','Se recalcula solo','Aparece un error siempre'],a:2,e:'Por eso las fórmulas usan celdas y no números escritos a mano.'},
+    {q:'¿Qué función te da la nota más alta de una lista?',o:['MIN','MAX','SUMA','CONTAR'],a:1,e:'MAX devuelve el valor más grande del rango.'},
+    {q:'¿Qué tipo de dato es 12/05/2026?',o:['Texto','Fórmula','Fecha','Función'],a:2,e:'Excel reconoce las fechas y las alinea a la derecha.'}
+  ];
+  const box=$('#quiz');let i=0,score=0;
+  function render(){
+    box.textContent='';
+    if(i>=Q.length){
+      box.append(el('p','big','Acertaste '+score+' de '+Q.length));
+      box.append(el('p','',score>=5?'¡Excelente! Ya dominas lo básico de Excel.':score>=3?'Vas muy bien. Repasa las diapositivas donde dudaste.':'Buen comienzo. Vuelve a las diapositivas y vuelve a intentarlo.'));
+      const b=el('button','btn primary','Repetir quiz');b.onclick=()=>{i=0;score=0;render()};box.appendChild(b);return;
+    }
+    const q=Q[i];
+    box.append(el('p','','Pregunta '+(i+1)+' de '+Q.length),el('p','big',q.q));
+    const wrap=el('div','opts');const fb=el('p','fb');fb.setAttribute('aria-live','polite');
+    const next=el('button','btn primary',i===Q.length-1?'Ver resultado':'Siguiente pregunta');next.hidden=true;
+    const btns=q.o.map((t,k)=>{const b=el('button','opt',t);b.type='button';
+      b.onclick=()=>{
+        btns.forEach(x=>x.disabled=true);btns[q.a].classList.add('right');
+        if(k===q.a){score++;setFb(fb,'ok','¡Correcto! '+q.e)}else{b.classList.add('wrong');setFb(fb,'no','No es esa. '+q.e)}
+        next.hidden=false;next.focus();
+      };wrap.appendChild(b);return b});
+    next.onclick=()=>{i++;render()};
+    box.append(wrap,fb,next);
+  }
+  render();
+})();
+
+/* ---------- 10. Lista de logros ---------- */
+(function(){
+  const items=['Sé nombrar las partes de la pantalla de Excel','Puedo ubicar una celda como B3','Distingo texto, números y fechas','Sé que las fórmulas empiezan con =','Puedo usar SUMA, PROMEDIO, MAX y MIN','Puedo dar formato a una tabla sencilla'];
+  const box=$('#checks'),msg=$('#check-msg');
+  const boxes=items.map(t=>{
+    const lab=el('label','check');const c=document.createElement('input');c.type='checkbox';c.onchange=upd;
+    lab.append(c,el('span','',t));box.appendChild(lab);return c;
+  });
+  function upd(){
+    const n=boxes.filter(b=>b.checked).length;
+    setFb(msg,n===items.length?'ok':'info',n===items.length?'¡Listo! Ya puedes empezar a trabajar en Excel.':'Llevas '+n+' de '+items.length+'.');
+  }
+  upd();
+})();
+
+go(0);
+</script>
+</body>
+</html>
